@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Search from "./components/Search";
 import MovieList from "./components/MovieList";
-import Footer from "./components/Footer";
+
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +28,7 @@ const App = () => {
             <MovieList /> {/* ✅ pass search term */}
           </section>
         </div>
-        <Footer />
+       
       </main>
     </>
   );
