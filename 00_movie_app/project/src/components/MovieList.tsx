@@ -2,22 +2,44 @@ import { useEffect, useState } from "react";
 
 const MovieList = () => {
   const [movies, setMovies] = useState<any[]>([]);
-  const [visibleCount, setVisibleCount] = useState(10); // how many movies to show
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const GetAPI = async () => {
-    const api = await fetch(
-      "https://imdb236.p.rapidapi.com/api/imdb/top250-movies",
-      {
-        method: "GET",
-        headers: {
-          "x-rapidapi-key":
-            "de6ad08770msh67634f70b2362a9p1a4bfajsn6eb9564a149b",
-          "x-rapidapi-host": "imdb236.p.rapidapi.com",
-        },
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const api = await fetch(
+        "https://imdb236.p.rapidapi.com/api/imdb/top250-movies",
+        {
+          method: "GET",
+          headers: {
+            "x-rapidapi-key":
+              "de6ad08770msh67634f70b2362a9p1a4bfajsn6eb9564a149b",
+            "x-rapidapi-host": "imdb236.p.rapidapi.com",
+          },
+        }
+      );
+
+      if (!api.ok) {
+        throw new Error("Failed to fetch movies");
       }
-    );
-    const resapi = await api.json();
-    setMovies(resapi.data || resapi);
+
+      const resapi = await api.json();
+      const movieData = resapi.data || resapi;
+
+      if (!movieData || movieData.length === 0) {
+        setErrorMessage("No movies found. Try again.");
+      }
+
+      setMovies(movieData);
+    } catch (error) {
+      setErrorMessage("Failed to load movies. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -26,54 +48,68 @@ const MovieList = () => {
 
   return (
     <div className="p-6">
+      {/* Loading State */}
+      {isLoading && (
+        <p className="text-center text-blue-500 font-semibold text-lg">
+          Loading movies...
+        </p>
+      )}
+
+      {/* Error / Empty State */}
+      {!isLoading && errorMessage && (
+        <p className="text-center text-red-500 font-semibold">{errorMessage}</p>
+      )}
+
       {/* Movies Grid */}
-      <div className="grid grid-cols-2  md:grid-cols-3 xl:grid-cols-4 gap-6">
-        {movies.slice(0, visibleCount).map((movie) => (
-          <div
-            key={movie.id}
-            className="bg-dark-100 rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition duration-300 group cursor-pointer"
-          >
-            {/* Movie Poster */}
-            <div className="relative">
-              <img
-                src={movie.primaryImage}
-                alt={movie.primaryTitle}
-                className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-300"
-              />
+      {!isLoading && movies.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+          {movies.slice(0, visibleCount).map((movie) => (
+            <div
+              key={movie.id}
+              className="bg-dark-100 rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition duration-300 group cursor-pointer"
+            >
+              {/* Movie Poster */}
+              <div className="relative">
+                <img
+                  src={movie.primaryImage}
+                  alt={movie.primaryTitle}
+                  className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-300"
+                />
 
-              {/* Rating badge */}
-              {movie.averageRating && (
-                <span className="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-lg shadow">
-                  ⭐ {movie.averageRating}
-                </span>
-              )}
+                {/* Rating badge */}
+                {movie.averageRating && (
+                  <span className="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded-lg shadow">
+                    ⭐ {movie.averageRating}
+                  </span>
+                )}
+              </div>
+
+              {/* Movie Info */}
+              <div className="p-4">
+                <h1 className="text-lg font-semibold mb-2 truncate">
+                  {movie.primaryTitle}
+                </h1>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  {movie.description || "No description available."}
+                </p>
+
+                {/* Hover Action */}
+                <a
+                  href={movie.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block w-full text-center bg-blue-600 text-white py-2 rounded-lg opacity-0 group-hover:opacity-100 transition duration-300"
+                >
+                  View Details
+                </a>
+              </div>
             </div>
-
-            {/* Movie Info */}
-            <div className="p-4">
-              <h1 className="text-lg font-semibold mb-2 truncate">
-                {movie.primaryTitle}
-              </h1>
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {movie.description || "No description available."}
-              </p>
-
-              {/* Hover Action */}
-              <a
-                href={movie.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block w-full text-center bg-blue-600 text-white py-2 rounded-lg opacity-0 group-hover:opacity-100 transition duration-300"
-              >
-                View Details
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* View More Button */}
-      {visibleCount < movies.length && (
+      {!isLoading && visibleCount < movies.length && (
         <div className="flex justify-center mt-8">
           <button
             onClick={() => setVisibleCount((prev) => prev + 10)}
